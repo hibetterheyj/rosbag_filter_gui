@@ -25,7 +25,7 @@ class RosYaml:
         self.file = file
         self.encoding = encoding
 
-    def get_ymal_data(self):
+    def get_yaml_data(self):
         with open(self.file, encoding=self.encoding) as f:
             data = yaml.load(f.read(), Loader=yaml.FullLoader)
         return data
@@ -36,10 +36,10 @@ class RosYaml:
 
 
 def get_topics():
-    yaml_path = os.path.join(cur_path, "bag_cached.yaml")
+    yaml_path = os.path.join(cur_path, "bag_yaml", "bag_cached.yaml")
     if os.path.exists(yaml_path):
         test_yaml = RosYaml(yaml_path)
-        data = test_yaml.get_ymal_data()
+        data = test_yaml.get_yaml_data()
         topic_list = []
         for topic in data["topics"]:
             topic_msg = "({}) ".format(topic["messages"]) + topic["topic"]
@@ -50,13 +50,12 @@ def get_topics():
 
 
 def gen_bag_info(input_bag):
-    info_dict = yaml.safe_load(
+    rosbag_into = yaml.safe_load(
         subprocess.Popen(
             ["rosbag", "info", "--yaml", str(input_bag)], stdout=subprocess.PIPE
         ).communicate()[0]
     )
-    bagname = input_bag.split("/")[-1]
-    return info_dict
+    return rosbag_into
 
 
 @Gooey(
@@ -66,6 +65,14 @@ def gen_bag_info(input_bag):
     monospace_display=False,  # Use a mono-spaced font in the output screen
 )
 def main():
+    cached_yaml = os.path.join(cur_path, "bag_yaml", "bag_cached.yaml")
+    if os.path.exists(cached_yaml):
+        rosbag_ = RosYaml(cached_yaml)
+        rosbag_into = rosbag_.get_yaml_data()
+        input_bag = rosbag_into['path']
+    else:
+        input_bag = "./test.bag"
+
     parser = GooeyParser(description="Filter rosbag with GUI")
     subs = parser.add_subparsers(help="commands", dest="command")
 
@@ -76,7 +83,7 @@ def main():
         "--input_bag",
         type=str,
         # help="input rosbag",
-        default="./test.bag",
+        default=input_bag,
         widget="FileChooser",  # Gooey
     )
     read_bag_group.add_argument(
@@ -132,19 +139,21 @@ def main():
     if args.read4process:
         if not os.path.exists("bag_yaml"):
             os.makedirs("bag_yaml")
-        info_dict = gen_bag_info(args.input_bag)
-        with open(
-            os.path.join("bag_yaml", args.input_bag.replace(".bag", ".yaml")), "w"
-        ) as file:
-            yaml.dump(info_dict, file)
-        with open(os.path.join(cur_path, "bag_cached.yaml"), "w") as file:
-            yaml.dump(info_dict, file)
+        rosbag_into = gen_bag_info(args.input_bag)
 
-        print("duration:", info_dict["duration"])
-        print("start:", info_dict["start"])
-        print("end:", info_dict["end"])
+        in_bagname = rosbag_into['path'].split("/")[-1]
+        dst_yaml = os.path.join("bag_yaml", in_bagname.split(".")[0] + ".yaml")
+
+        with open(dst_yaml, "w") as rosbag_yaml_file:
+            yaml.dump(rosbag_into, rosbag_yaml_file)
+        with open(cached_yaml, "w") as cached_file:
+            yaml.dump(rosbag_into, cached_file)
+
+        print("duration:", rosbag_into["duration"])
+        print("start:", rosbag_into["start"])
+        print("end:", rosbag_into["end"])
         print("topics:")
-        for topic in info_dict["topics"]:
+        for topic in rosbag_into["topics"]:
             topic_msg = "{} msgs: {} ({})".format(
                 str(topic["messages"]), topic["topic"], topic["type"]
             )
@@ -161,6 +170,11 @@ def main():
             else:
                 print("\t" + topic_msg.split(" ")[-1])
                 remain_topics.append(topic_msg.split(" ")[-1])
+
+        cached_yaml = os.path.join(cur_path, "bag_yaml", "bag_cached.yaml")
+        rosbag_ = RosYaml(cached_yaml)
+        rosbag_into = rosbag_.get_yaml_data()
+        args.input_bag = rosbag_into['path']
 
         in_bagname = args.input_bag.split("/")[-1]
         # in_dir = os.path.dirname(args.input_bag)
@@ -181,7 +195,7 @@ def main():
         print("\nConverting....")
         os.system(cmd)
         print("\nFinished!!!")
-        os.remove("bag_cached.yaml")
+        # os.remove("bag_cached.yaml")
 
 
 if __name__ == "__main__":
