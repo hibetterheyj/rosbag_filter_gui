@@ -1,12 +1,23 @@
+#!/usr/bin/env python3
 # -*-coding:utf-8 -*-
+# =============================================================================
 """
-@File    :   rosbag_filter_gui.py
-@Time    :   2021/11/16
-@Author  :   Yujie He
-@Version :   1.0
-@Contact :   yujie.he@epfl.ch
-@State   :   Dev
+@Author        :   Yujie He
+@File          :   rosbag_filter_gui.py
+@Date created  :   2021/11/16
+@Maintainer    :   Yujie He
+@Email         :   yujie.he@epfl.ch
 """
+# =============================================================================
+"""
+The module provides a simple workflow to filter rosbag with Gooey-based GUI
+"""
+# =============================================================================
+"""
+TODO:
+1. make it usable after filtering bag and exporting .yaml without open again
+"""
+# =============================================================================
 
 
 import os
@@ -106,7 +117,7 @@ def main():
     )
     stuff.add_argument(
         "--filter2save",
-        metavar="Filter bag and Export",
+        metavar="Filter bag and Export .yaml",
         help="Choose topic(s) to filter out",
         dest="filtered_topics",
         widget="Listbox",  # Dropdown Listbox
@@ -124,13 +135,13 @@ def main():
         "Filename Options", "Customize the name of filtered rosbags"
     )
     filename_group.add_argument(
-        "--suffix",
-        default="_filtered",
+        "--prefix",
+        default="",
         type=str,
     )
     filename_group.add_argument(
-        "--prefix",
-        default="",
+        "--suffix",
+        default="_filtered",
         type=str,
     )
 
@@ -207,7 +218,7 @@ if __name__ == "__main__":
 
 
 """
-Acknowledge:
+Acknowledgement:
     - https://github.com/AtsushiSakai/rosbag_filter_gui
     - https://github.com/chriskiehl/Gooey
     - https://github.com/chriskiehl/GooeyExamples/blob/ac162e0b71e72beb15cf25051138d4d69bdb5f75/examples/argument_groups_tabs.py
